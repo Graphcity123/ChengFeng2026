@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genshin Character Selector</title>
+<style>
+  @font-face {
+    font-family: 'HarmonyOS Sans SC';
+    src: url('../HarmonyOS_Sans_SC_Regular.woff2') format('woff2'),
+         url('../HarmonyOS_Sans_SC_Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'HarmonyOS Sans SC';
+    src: url('../HarmonyOS_Sans_SC_Black.woff2') format('woff2'),
+         url('../HarmonyOS_Sans_SC_Black.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #030D91;
+  }
+
+  .container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+  }
+
+  .column {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.5s ease;
+    background:
+      radial-gradient(ellipse 600px 400px at 15% 90%, rgba(70,150,250,0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 500px 350px at 70% 10%, rgba(50,130,230,0.12) 0%, transparent 55%),
+      radial-gradient(ellipse 350px 250px at 50% 50%, rgba(90,170,245,0.06) 0%, transparent 70%),
+      linear-gradient(165deg,
+        #020766 0%,
+        #030D91 15%,
+        #0412c0 35%,
+        #0515e0 50%,
+        #0410b8 65%,
+        #030D91 80%,
+        #020660 100%);
+    background-size: 100% 100%;
+  }
+
+  /* ── Liquid floating orbs ── */
+  .column::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 300px 200px at 40% 30%, rgba(120,190,245,0.1) 0%, transparent 70%),
+      radial-gradient(ellipse 250px 300px at 70% 70%, rgba(70,140,230,0.08) 0%, transparent 70%);
+    animation: liquidDrift 10s ease-in-out infinite;
+  }
+
+  @keyframes liquidDrift {
+    0%   { transform: translate(0, 0) scale(1); }
+    25%  { transform: translate(4%, -2%) scale(1.08); }
+    50%  { transform: translate(-2%, 3%) scale(0.94); }
+    75%  { transform: translate(-3%, -1%) scale(1.05); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+
+  /* ── Animated light caustic streaks ── */
+  .column::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 180px 100px at 20% 60%, rgba(170,210,245,0.06) 0%, transparent 80%),
+      radial-gradient(ellipse 150px 120px at 80% 40%, rgba(150,190,240,0.05) 0%, transparent 80%);
+    animation: causticShift 14s ease-in-out infinite;
+  }
+
+  @keyframes causticShift {
+    0%   { transform: translate(0, 0) rotate(0deg); }
+    33%  { transform: translate(-2%, 4%) rotate(1deg); }
+    66%  { transform: translate(3%, -2%) rotate(-1deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+  }
+
+  /* ── Vertical divider lines with glow ── */
+  .column:not(:last-child) {
+    border-right: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 1px 0 8px rgba(90,170,245,0.08);
+  }
+
+  /* ── Highlight state — pink theme ── */
+  .column.highlight {
+    background:
+      radial-gradient(ellipse 600px 400px at 15% 90%, rgba(255,150,180,0.2) 0%, transparent 60%),
+      radial-gradient(ellipse 500px 350px at 70% 10%, rgba(255,130,165,0.15) 0%, transparent 55%),
+      radial-gradient(ellipse 350px 250px at 50% 50%, rgba(255,180,200,0.08) 0%, transparent 70%),
+      linear-gradient(165deg,
+        #990040 0%,
+        #cc0056 15%,
+        #FF006C 35%,
+        #ff3389 50%,
+        #FF006C 65%,
+        #cc0056 80%,
+        #7f0036 100%) !important;
+  }
+
+  .column.highlight::before {
+    background:
+      radial-gradient(ellipse 300px 200px at 40% 30%, rgba(255,180,200,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 250px 300px at 70% 70%, rgba(255,150,180,0.1) 0%, transparent 70%);
+  }
+
+  .column.highlight::after {
+    background:
+      radial-gradient(ellipse 180px 100px at 20% 60%, rgba(255,210,225,0.08) 0%, transparent 80%),
+      radial-gradient(ellipse 150px 120px at 80% 40%, rgba(255,180,200,0.07) 0%, transparent 80%);
+  }
+
+  /* ── cf.png — flush top-left, behind text ── */
+  .cf-logo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 60%;
+    opacity: 0.5;
+    z-index: 2;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  /* ── Info text — top-left ── */
+  .info-text {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    z-index: 5;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .info-line1 {
+    color: #ffffff;
+    font-family: 'HarmonyOS Sans SC', 'Noto Sans SC', 'PingFang SC', sans-serif;
+    font-size: clamp(1rem, 1.6vw, 1.35rem);
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    line-height: 1.5;
+  }
+
+  .info-line1 .b {
+    font-family: 'HarmonyOS Sans SC', 'Noto Sans SC', sans-serif;
+    font-weight: 900;
+  }
+
+  .info-line2 {
+    color: #ffffff;
+    font-family: 'HarmonyOS Sans SC', 'Noto Sans SC', sans-serif;
+    font-weight: 900;
+    font-size: clamp(1rem, 1.6vw, 1.35rem);
+    letter-spacing: 0.06em;
+    line-height: 1.5;
+  }
+
+  /* ── Top-right — character name ── */
+  .name-block {
+    position: absolute;
+    top: 8px;
+    right: 0;
+    z-index: 5;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .name {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .name-char {
+    color: #ffffff;
+    font-family: 'HarmonyOS Sans SC', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 900;
+    font-size: clamp(3.9rem, 7vw, 5.8rem);
+    letter-spacing: 0.08em;
+    line-height: 1.05;
+    text-shadow: 0 0 8px rgba(255,255,255,0.25);
+  }
+
+  /* ── Bottom-right — portrait 1:2 ── */
+  .portrait-wrap {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    height: 88%;
+    aspect-ratio: 1 / 2;
+    z-index: 3;
+  }
+
+  .portrait {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+  }
+
+  /* ── Full-screen overlay ── */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: #030D91;
+    display: none;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .overlay.active {
+    display: flex;
+  }
+
+  .overlay-inner {
+    position: relative;
+    display: inline-block;
+    max-width: 100vw;
+    max-height: 100vh;
+  }
+
+  .overlay-bg {
+    display: block;
+    max-width: 100vw;
+    max-height: 100vh;
+    object-fit: contain;
+  }
+
+  .overlay-char {
+    position: absolute;
+    bottom: 0;
+    left: 40%;
+    transform: translateX(-50%);
+    height: 88%;
+    z-index: 1;
+    width: auto;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  /* ── Overlay left-side name + pinyin ── */
+  .overlay-text {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    padding-left: 0.3em;
+    z-index: 10;
+    user-select: none;
+    pointer-events: none;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .overlay-name {
+    color: #ffffff;
+    font-family: 'HarmonyOS Sans SC', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 400;
+    font-size: clamp(2.8rem, 5.5vw, 5rem);
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 12px rgba(255,255,255,0.3);
+    line-height: 1.1;
+  }
+
+  .overlay-pinyin {
+    color: #ffffff;
+    font-family: 'HarmonyOS Sans SC', 'Noto Sans SC', sans-serif;
+    font-weight: 900;
+    font-size: clamp(1.4rem, 2.8vw, 2.2rem);
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 8px rgba(255,255,255,0.2);
+    line-height: 1.2;
+  }
+
+  /* ── Overlay logo icon ── */
+  .overlay-logo {
+    display: block;
+    margin-top: 0.4em;
+    width: clamp(2rem, 3.5vw, 3.5rem);
+    opacity: 0.7;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Column 0: 多托雷 -->
+  <div class="column" id="col0">
+    <img class="cf-logo" src="ys.png" alt="" draggable="false">
+    <div class="info-text">
+      <div class="info-line1"><span class="b">GENSHIN</span> IMPACT</div>
+      <div class="info-line2">Dottore</div>
+    </div>
+    <div class="name-block">
+      <span class="name">多托雷</span>
+    </div>
+    <div class="portrait-wrap">
+      <img class="portrait" src="dtl.png" alt="" draggable="false">
+    </div>
+  </div>
+
+  <!-- Column 1: 潘塔罗涅 -->
+  <div class="column" id="col1">
+    <img class="cf-logo" src="ys.png" alt="" draggable="false">
+    <div class="info-text">
+      <div class="info-line1"><span class="b">GENSHIN</span> IMPACT</div>
+      <div class="info-line2">Pantalone</div>
+    </div>
+    <div class="name-block">
+      <span class="name">潘塔罗涅</span>
+    </div>
+    <div class="portrait-wrap">
+      <img class="portrait" src="fr.png" alt="" draggable="false">
+    </div>
+  </div>
+
+  <!-- Column 2: 罗莎琳 -->
+  <div class="column" id="col2">
+    <img class="cf-logo" src="ys.png" alt="" draggable="false">
+    <div class="info-text">
+      <div class="info-line1"><span class="b">GENSHIN</span> IMPACT</div>
+      <div class="info-line2">Rosalyne</div>
+    </div>
+    <div class="name-block">
+      <span class="name">罗莎琳</span>
+    </div>
+    <div class="portrait-wrap">
+      <img class="portrait" src="ns.png" alt="" draggable="false">
+    </div>
+  </div>
+
+  <!-- Column 3: 桑多涅 -->
+  <div class="column" id="col3">
+    <img class="cf-logo" src="ys.png" alt="" draggable="false">
+    <div class="info-text">
+      <div class="info-line1"><span class="b">GENSHIN</span> IMPACT</div>
+      <div class="info-line2">Sandrone</div>
+    </div>
+    <div class="name-block">
+      <span class="name">桑多涅</span>
+    </div>
+    <div class="portrait-wrap">
+      <img class="portrait" src="sdn.png" alt="" draggable="false">
+    </div>
+  </div>
+
+  <!-- Column 4: 雷利尔 -->
+  <div class="column" id="col4">
+    <img class="cf-logo" src="ys.png" alt="" draggable="false">
+    <div class="info-text">
+      <div class="info-line1"><span class="b">GENSHIN</span> IMPACT</div>
+      <div class="info-line2">Leilier</div>
+    </div>
+    <div class="name-block">
+      <span class="name">雷利尔</span>
+    </div>
+    <div class="portrait-wrap">
+      <img class="portrait" src="llr.png" alt="" draggable="false">
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-inner">
+    <img class="overlay-bg" src="ttdd.png" alt="" draggable="false">
+    <div class="overlay-text" id="overlay-text">
+      <div class="overlay-name" id="overlay-name"></div>
+      <div class="overlay-pinyin" id="overlay-pinyin"></div>
+      <img class="overlay-logo" src="ys.png" alt="" draggable="false">
+    </div>
+    <img class="overlay-char" id="overlay-char" src="" alt="" draggable="false">
+  </div>
+</div>
+
+<audio id="m1" src="m1.mp3" preload="auto"></audio>
+<audio id="m2" src="m2.mp3" preload="auto"></audio>
+<audio id="yys" src="yys.mp3" preload="auto"></audio>
+<audio id="jy" src="jy.mp3" preload="auto"></audio>
+<audio id="sxsz" src="sxsz.mp3" preload="auto"></audio>
+
+<script>
+(function() {
+  var COL_COUNT = 5;
+  var SCROLL_INTERVAL = 300;
+  var charImages = ['dtl.png', 'fr.png', 'ns.png', 'sdn.png', 'llr.png'];
+  var charNames = ['多托雷', '潘塔罗涅', '罗莎琳', '桑多涅', '雷利尔'];
+  var charPinyin = ['Dottore', 'Pantalone', 'Rosalyne', 'Sandrone', 'Leilier'];
+
+  var currentCol = 0;
+  var isScrolling = false;
+  var timerId = null;
+  var delayId = null;
+  var columns = document.querySelectorAll('.column');
+  var overlay = document.getElementById('overlay');
+  var overlayChar = document.getElementById('overlay-char');
+  var overlayName = document.getElementById('overlay-name');
+  var overlayPinyin = document.getElementById('overlay-pinyin');
+  var m1 = document.getElementById('m1');
+  var m2 = document.getElementById('m2');
+  var yys = document.getElementById('yys');
+  var jy = document.getElementById('jy');
+  var sxsz = document.getElementById('sxsz');
+
+  function highlight(colIndex) {
+    for (var i = 0; i < columns.length; i++) {
+      columns[i].classList.remove('highlight');
+    }
+    columns[colIndex].classList.add('highlight');
+    currentCol = colIndex;
+  }
+
+  function cancelDelay() {
+    if (delayId) {
+      clearTimeout(delayId);
+      delayId = null;
+    }
+  }
+
+  function stopAllAudio() {
+    m1.pause();
+    m2.pause();
+    yys.pause();
+    jy.pause();
+    sxsz.pause();
+  }
+
+  function startScrolling() {
+    if (isScrolling) return;
+    isScrolling = true;
+    cancelDelay();
+    overlay.classList.remove('active');
+    stopAllAudio();
+    m1.currentTime = 0;
+    m1.play();
+    highlight(currentCol);
+    timerId = setInterval(function() {
+      currentCol = (currentCol + 1) % COL_COUNT;
+      highlight(currentCol);
+    }, SCROLL_INTERVAL);
+  }
+
+  function stopScrolling() {
+    if (!isScrolling) return;
+    isScrolling = false;
+    if (timerId) {
+      clearInterval(timerId);
+      timerId = null;
+    }
+    stopAllAudio();
+    m2.currentTime = 0;
+    m2.play();
+    var stoppedCol = currentCol;
+    delayId = setTimeout(function() {
+      // Show ttdd.png as base + character image + name on top
+      overlayChar.src = charImages[stoppedCol];
+      overlayName.textContent = charNames[stoppedCol];
+      overlayPinyin.textContent = charPinyin[stoppedCol];
+      overlay.classList.add('active');
+
+      // Stop m2, play column-specific audio
+      m2.pause();
+
+      // Reset all audio volumes to default first
+      yys.volume = 1.0;
+      jy.volume = 1.0;
+      sxsz.volume = 1.0;
+
+      if (stoppedCol === 0) {
+        yys.currentTime = 0;
+        yys.play();
+      } else if (stoppedCol === 1) {
+        jy.volume = 0.75;
+        jy.currentTime = 0;
+        jy.play();
+      } else if (stoppedCol === 2) {
+        yys.currentTime = 0;
+        yys.play();
+      } else if (stoppedCol === 3) {
+        sxsz.currentTime = 0;
+        sxsz.play();
+      } else if (stoppedCol === 4) {
+        yys.currentTime = 0;
+        yys.play();
+      }
+      delayId = null;
+    }, 3500);
+  }
+
+  function toggle() {
+    if (isScrolling) {
+      stopScrolling();
+    } else {
+      startScrolling();
+    }
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      toggle();
+    }
+    if (e.code === 'Escape') {
+      cancelDelay();
+      overlay.classList.remove('active');
+      stopAllAudio();
+    }
+  });
+
+  document.addEventListener('click', function() {
+    toggle();
+  });
+
+  // Split vertical names into individual characters for cross-platform rendering
+  var nameEls = document.querySelectorAll('.name');
+  for (var ni = 0; ni < nameEls.length; ni++) {
+    var el = nameEls[ni];
+    var text = el.textContent;
+    var html = '';
+    for (var ci = 0; ci < text.length; ci++) {
+      html += '<span class="name-char">' + text.charAt(ci) + '</span>';
+    }
+    el.innerHTML = html;
+  }
+
+  highlight(0);
+})();
+</script>
+
+</body>
+</html>
